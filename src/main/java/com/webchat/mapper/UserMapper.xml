@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.webchat.mapper.UserMapper">
+    <resultMap id="userMap" type="com.webchat.entity.User">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="password" column="password"/>
+        <result property="nickname" column="nickname"/>
+        <result property="enabled" column="enabled" jdbcType="BIT"/>
+        <result property="email" column="email"/>
+        <result property="userface" column="userface"/>
+        <result property="regTime" column="regTime"/>
+    </resultMap>
+    <resultMap id="userMap2" type="com.webchat.entity.User" extends="userMap">
+        <association property="role" javaType="com.webchat.entity.Role" select="com.webchat.mapper.UserMapper.getRoleByUserId"
+                     column="id">
+
+        </association>
+    </resultMap>
+
+    <select id="getRoleByUserId" resultType="com.webchat.entity.Role">
+        SELECT r.* FROM roles_user ru, roles r WHERE r.id = ru.rid AND ru.uid = #{id}
+    </select>
+
+    <select id="getUserById" resultMap="userMap2">
+        select * from user where id = #{id}
+    </select>
+
+    <select id="allUser" resultMap="userMap">
+        select id, username, nickname,online from user;
+    </select>
+
+    <select id="getUserByUsername" resultMap="userMap2">
+        select * from user where username=#{username}
+    </select>
+
+    <update id="updateUserById">
+        UPDATE user SET online = #{online} WHERE id = #{id};
+    </update>
+
+    <insert id="saveRoleUser">
+        INSERT INTO roles_user(uid, rid) VALUES (#{uid}, #{rid});
+    </insert>
+
+    <insert id="saveUser">
+        <selectKey keyProperty="id" resultType="java.lang.Integer">
+            select LAST_INSERT_ID();
+        </selectKey>
+        insert into user
+        <trim suffix=")" prefix="(" suffixOverrides=",">
+            <if test="username != null">
+                username,
+            </if>
+            <if test="password != null">
+                password,
+            </if>
+            <if test="nickname != null">
+                nickname,
+            </if>
+            <if test="enabled != null">
+                enabled,
+            </if>
+            <if test="email != null">
+                email,
+            </if>
+            <if test="userface != null">
+                userface,
+            </if>
+            <if test="regTime != null">
+                regTime,
+            </if>
+        </trim>
+        <trim suffix=")" prefix="VALUES(" suffixOverrides=",">
+            <if test="username != null">
+                #{username},
+            </if>
+            <if test="password != null">
+                #{password},
+            </if>
+            <if test="nickname != null">
+                #{nickname},
+            </if>
+            <if test="enabled != null">
+                #{enabled},
+            </if>
+            <if test="email != null">
+                #{email},
+            </if>
+            <if test="userface != null">
+                #{userface},
+            </if>
+            <if test="regTime != null">
+                #{regTime},
+            </if>
+        </trim>
+    </insert>
+</mapper>

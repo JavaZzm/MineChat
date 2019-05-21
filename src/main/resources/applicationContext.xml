@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx" xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!--配置扫描包-->
+    <context:component-scan base-package="com.webchat.service" use-default-filters="true">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
+
+    <context:property-placeholder location="classpath:db.properties"/>
+    <bean class="com.alibaba.druid.pool.DruidDataSource" id="dataSource">
+        <property name="driverClassName" value="${db.driver}"/>
+        <property name="username" value="${db.username}"/>
+        <property name="password" value="${db.password}"/>
+        <property name="url" value="${db.url}"/>
+    </bean>
+    <!--配置事务管理器-->
+    <bean class="org.springframework.jdbc.datasource.DataSourceTransactionManager" id="transactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <tx:advice transaction-manager="transactionManager" id="txAdvice">
+        <tx:attributes>
+            <!-- 传播行为 -->
+            <tx:method name="save*" propagation="REQUIRED"/>
+            <tx:method name="insert*" propagation="REQUIRED"/>
+            <tx:method name="add*" propagation="REQUIRED"/>
+            <tx:method name="create*" propagation="REQUIRED"/>
+            <tx:method name="delete*" propagation="REQUIRED"/>
+            <tx:method name="update*" propagation="REQUIRED"/>
+            <tx:method name="find*" propagation="SUPPORTS" read-only="true"/>
+            <tx:method name="select*" propagation="SUPPORTS" read-only="true"/>
+            <tx:method name="get*" propagation="SUPPORTS" read-only="true"/>
+        </tx:attributes>
+    </tx:advice>
+    <aop:config>
+        <aop:pointcut id="pc" expression="execution(* com.webchat.service.*.*(..))"/>
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="pc"/>
+    </aop:config>
+
+    <!--配置Mybatis-->
+    <bean class="org.mybatis.spring.SqlSessionFactoryBean" id="sessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="mapperLocations">
+            <list>
+                <value>classpath*:com/webchat/mapper/*.xml</value>
+            </list>
+        </property>
+        <!--配置实体类别名-->
+        <property name="typeAliasesPackage" value="com.webchat.entity"/>
+        <!--配置类型转换器-->
+        <property name="typeHandlersPackage" value="com.webchat.handler"/>
+    </bean>
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.webchat.mapper"/>
+        <property name="sqlSessionFactoryBeanName" value="sessionFactoryBean"/>
+    </bean>
+
+
+
+    <!--shiro配置-->
+    <!--com.webchat.realm.UserRealm 这个是自定义的Realm-->
+    <bean class="com.webchat.realm.UserRealm" id="userRealm">
+        <property name="credentialsMatcher">
+            <bean class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+                <!--密码加密和加盐-->
+                <property name="hashAlgorithmName" value="SHA-512"/>
+                <property name="hashIterations" value="1024"/>
+            </bean>
+        </property>
+    </bean>
+    <bean class="org.apache.shiro.web.mgt.DefaultWebSecurityManager" id="securityManager">
+        <property name="realm" ref="userRealm"/>
+    </bean>
+    <bean class="org.apache.shiro.spring.web.ShiroFilterFactoryBean" id="shiroFilter">
+        <property name="securityManager" ref="securityManager"/>
+        <property name="loginUrl" value="/login"/>
+        <property name="filterChainDefinitions">
+            <value>
+                <!--
+                    anon 表示无需认证（登录）就可访问
+                    authc 表示需认证（登录）才可访问
+                    /**=authc：表示除了在它之上的请求都需要拦截，放在最后
+                -->
+                /logout=logout
+                /doLogin=anon
+                /favicon.ico=anon
+                /doRegister=anon
+                /register=anon
+                /resources/**=anon
+                /**=authc
+            </value>
+        </property>
+    </bean>
+</beans>

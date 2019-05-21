@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.webchat.mapper.MessageMapper">
+    <resultMap id="msgMap" type="com.webchat.entity.WsMessage">
+        <id property="id" column="id"/>
+        <result property="from_id" column="from_id"/>
+        <result property="to_id" column="to_id"/>
+        <result property="msg" column="msg"/>
+        <result property="time" column="time"/>
+        <result property="type" column="type"/>
+    </resultMap>
+
+    <select id="listMessage" resultMap="msgMap">
+        SELECT id,from_id,to_id,msg,`time`,`type` FROM message
+        <where>
+            <if test="from_id != null">
+                (from_id = #{from_id} AND to_id = #{to_id}) OR (from_id =
+                #{to_id}
+                AND
+                to_id =
+                #{from_id})
+            </if>
+            <if test="type != null">
+                AND type = #{type}
+            </if>
+        </where>
+    </select>
+
+    <insert id="saveMsg">
+        <selectKey>
+            select LAST_INSERT_ID();
+        </selectKey>
+        insert into message
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="from_id != null">
+                from_id,
+            </if>
+            <if test="to_id != null">
+                to_id,
+            </if>
+            <if test="msg != null">
+                msg,
+            </if>
+            <if test="time != null">
+                time,
+            </if>
+            <if test="type != null">
+                type,
+            </if>
+
+        </trim>
+        <trim prefix="VALUES(" suffix=")" suffixOverrides=",">
+            <if test="from_id != null">
+                #{from_id},
+            </if>
+            <if test="to_id != null">
+                #{to_id},
+            </if>
+            <if test="msg != null">
+                #{msg},
+            </if>
+            <if test="time != null">
+                #{time},
+            </if>
+            <if test="type != null">
+                #{type},
+            </if>
+
+        </trim>
+    </insert>
+
+</mapper>
